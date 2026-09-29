@@ -1,14 +1,6 @@
 
 
-/* INI HEADER */
-.header {
-    display:flex; 
-    justify-content:space-between; 
-    align-items:center;
-    background:linear-gradient(90deg,#004d7a,#008793);
-    color:#fff; 
-    padding:10px 30px;
-}
+
 
 .left-header {
     display:flex; 
