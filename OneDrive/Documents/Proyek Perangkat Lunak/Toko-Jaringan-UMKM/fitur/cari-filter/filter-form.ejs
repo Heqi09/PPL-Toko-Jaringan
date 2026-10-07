@@ -1,0 +1,11 @@
+<form method="get" action="/" class="filters">
+  <input type="text" name="q" value="<%= q %>" placeholder="Cari nama atau merek...">
+  <select name="kategori">
+    <option value="">Semua kategori</option>
+    <% categories.forEach(c => { %>
+      <option value="<%= c.id %>" <%= kategori === c.id ? 'selected' : '' %>><%= c.name %></option>
+    <% }) %>
+  </select>
+  <button class="btn">Cari</button>
+  <% if (q || kategori) { %><a href="/" class="btn ghost">Reset</a><% } %>
+</form>
