@@ -1,0 +1,39 @@
+<%- include('partials/header') %>
+<h1><%= title %></h1>
+<% if (errors.length) { %>
+  <div class="flash error"><ul><% errors.forEach(e => { %><li><%= e %></li><% }) %></ul></div>
+<% } %>
+<form method="post" action="<%= action %>" class="form" enctype="multipart/form-data">
+  <label>Nama produk <input type="text" name="name" value="<%= product.name || '' %>" required></label>
+  <label>Merek <input type="text" name="brand" value="<%= product.brand || '' %>"></label>
+  <label>Kategori
+    <select name="category_id" required>
+      <% categories.forEach(c => { %>
+        <option value="<%= c.id %>" <%= product.category_id === c.id ? 'selected' : '' %>><%= c.name %></option>
+      <% }) %>
+    </select>
+  </label>
+  <div class="cols">
+    <label>Harga (Rp) <input type="number" name="price" min="0" value="<%= product.price ?? '' %>" required></label>
+    <label>Stok <input type="number" name="stock" min="0" value="<%= product.stock ?? '' %>" required></label>
+    <label>Berat (gram) <input type="number" name="weight_gram" min="1" value="<%= product.weight_gram ?? '' %>" required></label>
+  </div>
+  <label>Garansi <input type="text" name="warranty" value="<%= product.warranty || '' %>" placeholder="mis. 1 tahun"></label>
+  <label>Deskripsi <textarea name="description" rows="3"><%= product.description || '' %></textarea></label>
+  <label>Spesifikasi (satu baris satu poin) <textarea name="specs" rows="4"><%= product.specs || '' %></textarea></label>
+  <%# Field foto sengaja di paling bawah: field teks di atasnya tetap terbaca bila upload gagal %>
+  <label>Foto produk (JPG, PNG, atau WEBP, maks. 2 MB)
+    <input type="file" name="foto" accept="image/jpeg,image/png,image/webp">
+  </label>
+  <% if (product.image_url) { %>
+    <div>
+      <img src="<%= imgSrc(product.image_url) %>" alt="Foto saat ini" class="preview">
+      <small class="muted">Foto saat ini: <%= product.image_url %>. Pilih file baru hanya jika ingin menggantinya.</small>
+    </div>
+  <% } %>
+  <div class="row">
+    <button class="btn">Simpan</button>
+    <a class="btn ghost" href="/admin/produk">Batal</a>
+  </div>
+</form>
+<%- include('partials/footer') %>

@@ -1,0 +1,37 @@
+<%- include('partials/header') %>
+<p><a href="/">&larr; Kembali ke katalog</a></p>
+<div class="detail">
+  <div class="pic">
+    <% if (product.image_url) { %><img src="<%= imgSrc(product.image_url) %>" alt="<%= product.name %>"><% } else { %><span>Tanpa foto</span><% } %>
+  </div>
+  <div class="info">
+    <small class="muted"><%= product.category_name %></small>
+    <h1><%= product.name %></h1>
+    <p class="muted">Merek: <%= product.brand || '-' %> · Garansi: <%= product.warranty || '-' %></p>
+    <div class="price big"><%= rupiah(product.price) %></div>
+    <p>Berat: <%= product.weight_gram %> gram</p>
+    <% if (product.stock < 1) { %>
+      <span class="badge out">Stok habis</span>
+    <% } else { %>
+      <p>Stok tersedia: <strong><%= product.stock %></strong></p>
+      <% if (!user) { %>
+        <p><a class="btn" href="/login">Masuk untuk membeli</a></p>
+      <% } else if (user.role === 'buyer') { %>
+        <form method="post" action="/keranjang/tambah" class="row">
+          <input type="hidden" name="product_id" value="<%= product.id %>">
+          <input type="number" name="qty" value="1" min="1" max="<%= product.stock %>">
+          <button class="btn">Tambah ke keranjang</button>
+        </form>
+      <% } %>
+    <% } %>
+    <h3>Deskripsi</h3>
+    <p><%= product.description || '-' %></p>
+    <h3>Spesifikasi</h3>
+    <% if (product.specs) { %>
+      <ul>
+        <% product.specs.split('\n').filter(Boolean).forEach(s => { %><li><%= s %></li><% }) %>
+      </ul>
+    <% } else { %><p>-</p><% } %>
+  </div>
+</div>
+<%- include('partials/footer') %>

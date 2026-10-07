@@ -1,0 +1,40 @@
+<%- include('partials/header') %>
+<h1>Keranjang Belanja</h1>
+<% if (!items.length) { %>
+  <p class="empty">Keranjang masih kosong. <a href="/">Lihat katalog</a></p>
+<% } else { %>
+<table class="table">
+  <thead><tr><th>Produk</th><th>Harga</th><th>Jumlah</th><th>Subtotal</th><th></th></tr></thead>
+  <tbody>
+  <% items.forEach(i => { %>
+    <tr>
+      <td>
+        <a href="/produk/<%= i.product_id %>"><%= i.name %></a><br>
+        <small class="muted"><%= i.brand || '' %> · Stok <%= i.stock %></small>
+      </td>
+      <td><%= rupiah(i.price) %></td>
+      <td>
+        <form method="post" action="/keranjang/ubah" class="row">
+          <input type="hidden" name="product_id" value="<%= i.product_id %>">
+          <input type="number" name="qty" value="<%= i.qty %>" min="0" max="<%= i.stock %>">
+          <button class="btn small">Ubah</button>
+        </form>
+      </td>
+      <td><%= rupiah(i.price * i.qty) %></td>
+      <td>
+        <form method="post" action="/keranjang/hapus">
+          <input type="hidden" name="product_id" value="<%= i.product_id %>">
+          <button class="btn small danger">Hapus</button>
+        </form>
+      </td>
+    </tr>
+  <% }) %>
+  </tbody>
+  <tfoot>
+    <tr><td colspan="3" class="right">Total berat</td><td colspan="2"><%= totalWeight %> gram</td></tr>
+    <tr><td colspan="3" class="right"><strong>Total</strong></td><td colspan="2"><strong><%= rupiah(total) %></strong></td></tr>
+  </tfoot>
+</table>
+<p class="muted">Checkout dan pembayaran dikerjakan pada Sprint 2.</p>
+<% } %>
+<%- include('partials/footer') %>
