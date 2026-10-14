@@ -1,0 +1,29 @@
+<%- include('partials/header') %>
+<h1>Katalog Produk</h1>
+
+<%- filterForm %>
+
+<% if (!products.length) { %>
+  <p class="empty">Tidak ada produk yang cocok.</p>
+<% } else { %>
+<div class="grid">
+  <% products.forEach(p => { %>
+  <article class="card">
+    <a href="/produk/<%= p.id %>" class="thumb">
+      <% if (p.image_url) { %><img src="<%= imgSrc(p.image_url) %>" alt="<%= p.name %>"><% } else { %><span>Tanpa foto</span><% } %>
+    </a>
+    <div class="body">
+      <small class="muted"><%= p.category_name %><%= p.brand ? ' · ' + p.brand : '' %></small>
+      <h3><a href="/produk/<%= p.id %>"><%= p.name %></a></h3>
+      <div class="price"><%= rupiah(p.price) %></div>
+      <% if (p.stock < 1) { %>
+        <span class="badge out">Stok habis</span>
+      <% } else { %>
+        <small class="muted">Stok: <%= p.stock %></small>
+      <% } %>
+    </div>
+  </article>
+  <% }) %>
+</div>
+<% } %>
+<%- include('partials/footer') %>
