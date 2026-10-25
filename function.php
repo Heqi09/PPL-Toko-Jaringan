@@ -227,4 +227,20 @@ function update_order_status($order_id, $status) {
     $status   = mysqli_real_escape_string($conn, $status);
     return mysqli_query($conn, "UPDATE orders SET status = '$status' WHERE order_id = '$order_id'");
 }
+
+// Komponen Komputasional Rule-Based: Peringatan Restock (Stok < 5)
+function get_peringatan_restock() {
+    return query("SELECT * FROM produk WHERE stok < 5 ORDER BY stok ASC");
+}
+
+// Komponen Komputasional Scoring Sederhana: Top 5 Produk Terlaris
+function get_top_5_terlaris() {
+    return query("SELECT p.nama, p.kategori, SUM(od.qty) as total_terjual 
+                  FROM order_details od 
+                  JOIN orders o ON od.order_id = o.order_id 
+                  JOIN produk p ON od.produk_id = p.id 
+                  WHERE o.status = 'dibayar' 
+                  GROUP BY od.produk_id 
+                  ORDER BY total_terjual DESC LIMIT 5");
+}
 ?>
