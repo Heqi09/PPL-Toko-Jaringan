@@ -2,6 +2,7 @@
 require_once __DIR__ . '/session.php';
 require_once __DIR__ . '/conn.php';
 require_once __DIR__ . '/conn.php';
+require_once __DIR__ . '/config_midtrans.php';
 
 function query($sql) {
     global $conn;
@@ -125,5 +126,105 @@ function upload_gambar() {
     }
 
     return false;
+}
+
+// Request Snap Token ke Server Midtrans
+function get_midtrans_snap_token($order_id, $gross_amount, $user_name, $items) {
+    $item_details = [];
+    foreach ($items as $item) {
+        $item_details[] = [
+            'id'       => $item['produk_id'],
+            'price'    => (int)$item['harga'],
+            'quantity' => (int)$item['qty'],
+            'name'     => substr($item['nama'], 0, 50)
+        ];
+    }
+
+    $payload = [
+        'transaction_details' => [
+            'order_id'     => $order_id,
+            'gross_amount' => (int)$gross_amount
+        ],
+        'customer_details' => [
+            'first_name' => $user_name
+        ],
+        'item_details' => $item_details
+    ];
+
+    $ch = curl_init(MIDTRANS_SNAP_URL);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'Accept: application/json',
+        'Authorization: Basic ' . base64_encode(MIDTRANS_SERVER_KEY . ':')
+    ]);
+
+    $response = curl_exec($ch);
+    curl_close($ch);
+
+    $result = json_decode($response, true);
+    return $result['token'] ?? null;
+}
+
+// Proses Pembuatan Order & Token Pembayaran
+function proses_checkout_pesanan($user_id, $alamat, $catatan) {
+    global $conn;
+
+    $cart_items = query("SELECT k.qty, k.produk_id, p.harga, p.nama, p.stok 
+                         FROM keranjang k JOIN produk p ON k.produk_id = p.id 
+                         WHERE k.user_id = $user_id");
+
+    if (empty($cart_items)) {
+        return ['status' => false, 'message' => 'Keranjang Anda kosong.'];
+    }
+
+    $total_harga = 0;
+    foreach ($cart_items as $item) {
+        if ($item['qty'] > $item['stok']) {
+            return ['status' => false, 'message' => "Stok produk '" . $item['nama'] . "' tidak mencukupi."];
+        }
+        $total_harga += ($item['harga'] * $item['qty']);
+    }
+
+    $order_id     = 'ORD-' . time() . '-' . $user_id;
+    $user_name    = $_SESSION['user']['nama'] ?? 'Customer';
+    $alamat_clean = mysqli_real_escape_string($conn, $alamat);
+    $catatan_clean= mysqli_real_escape_string($conn, $catatan);
+
+    $snap_token = get_midtrans_snap_token($order_id, $total_harga, $user_name, $cart_items);
+
+    $sql_order = "INSERT INTO orders (order_id, user_id, total_harga, status, snap_token, alamat_pengiriman, catatan) 
+                  VALUES ('$order_id', $user_id, $total_harga, 'pending', '$snap_token', '$alamat_clean', '$catatan_clean')";
+    
+    if (mysqli_query($conn, $sql_order)) {
+        foreach ($cart_items as $item) {
+            $p_id    = $item['produk_id'];
+            $p_nama  = mysqli_real_escape_string($conn, $item['nama']);
+            $p_harga = $item['harga'];
+            $p_qty   = $item['qty'];
+            $subtotal= $p_harga * $p_qty;
+
+            mysqli_query($conn, "INSERT INTO order_details (order_id, produk_id, nama_produk, harga, qty, subtotal) 
+                                 VALUES ('$order_id', $p_id, '$p_nama', $p_harga, $p_qty, $subtotal)");
+            
+            // Otomatis kurangi stok produk
+            mysqli_query($conn, "UPDATE produk SET stok = stok - $p_qty WHERE id = $p_id");
+        }
+
+        mysqli_query($conn, "DELETE FROM keranjang WHERE user_id = $user_id");
+
+        return ['status' => true, 'order_id' => $order_id, 'snap_token' => $snap_token];
+    }
+
+    return ['status' => false, 'message' => 'Gagal membuat pesanan.'];
+}
+
+function update_order_status($order_id, $status) {
+    global $conn;
+    $order_id = mysqli_real_escape_string($conn, $order_id);
+    $status   = mysqli_real_escape_string($conn, $status);
+    return mysqli_query($conn, "UPDATE orders SET status = '$status' WHERE order_id = '$order_id'");
 }
 ?>
